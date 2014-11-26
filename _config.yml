@@ -1,5 +1,16 @@
-name: hooonko
-markdown: redcarpet
-pygments: true
+# Site settings
+title: hooonko
+email: hooon.ko@gmail.com
+description: "hooonko's github io blog!"
+baseurl: ""
+url: "http://yourdomain.com"
+twitter_username: hooonko
+github_username:  hooonko
+facebook_username:  hooonko
 
-port: 8080
+# Build settings
+markdown: kramdown
+highlighter: pygments
+permalink: pretty
+paginate: 5
+exclude: ["node_modules"]
