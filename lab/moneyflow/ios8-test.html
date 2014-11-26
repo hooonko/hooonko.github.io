@@ -1,0 +1,142 @@
+<!doctype html>
+<html>
+<head>
+<meta name="viewport" content="user-scalable=no, initial-scale=1, maximum-scale=1, minimum-scale=1, width=device-width, height=device-height" />
+</head>
+    
+<body>
+<script src="js/lib/jquery-1.11.1.min.js"></script>
+<script>
+var db;
+
+function indexedDBOk() {
+	return "indexedDB" in window;
+}
+
+document.addEventListener("DOMContentLoaded", function() {
+
+	//No support? Go in the corner and pout.
+	if(!indexedDBOk()) return;
+
+	var openRequest = indexedDB.open("ios8_final3",1);
+
+	openRequest.onupgradeneeded = function(e) {
+		var thisDB = e.target.result;
+
+		console.log("running onupgradeneeded");
+
+		if(!thisDB.objectStoreNames.contains("people")) {
+			thisDB.createObjectStore("people", {keyPath:"id"});
+		}
+
+		if(!thisDB.objectStoreNames.contains("notes")) {
+			thisDB.createObjectStore("notes", {keyPath:"uid"});
+		}
+
+	}
+
+	openRequest.onsuccess = function(e) {
+		console.log("running onsuccess");
+
+		db = e.target.result;
+
+		console.log("Current Object Stores");
+		console.dir(db.objectStoreNames);
+
+		//Listen for add clicks
+		document.querySelector("#addButton").addEventListener("click", addPerson, false);
+	}	
+
+	openRequest.onerror = function(e) {
+		//Do something for the error
+	}
+
+
+},false);
+
+
+function addPerson(e) {
+	console.log("About to add person and note");
+
+
+	//Define a person
+	var person = {
+		name:"Ray",
+		created:new Date().toString(),
+	}
+	
+	//Perform the add
+	db.transaction(["people"],"readwrite").objectStore("people").count().onsuccess = function(event) {
+		var total = event.target.result;
+		console.log(total);
+		person.id = "person/" + (total+1);
+		
+		var request = db.transaction(["people"],"readwrite").objectStore("people").add(person);
+		
+		request.onerror = function(e) {
+			console.log("Error",e.target.error.name);
+			//some type of error handler
+		}
+
+		request.onsuccess = function(e) {
+			console.log("Woot! Did it");
+			 var trans = db.transaction(["people"],"readwrite");
+        var store = trans.objectStore("people");
+
+        var keyRange = IDBKeyRange.lowerBound(0);
+
+        var cursorRequest = store.openCursor(keyRange);
+
+        var typeItems = new Array();
+        cursorRequest.onsuccess = function(e) {
+            var result = e.target.result;
+            if(!!result == false) {
+                $('#resultWrap').html(JSON.stringify(typeItems, undefined, 2));
+                return;
+            }
+
+            typeItems.push({
+                key: result.key,
+                value: result.value
+            });
+
+            result.continue();
+        };
+
+        cursorRequest.onerror = function() {};
+		}
+
+	}
+
+	//Define a note
+	var note = {
+		note:"note",
+		created:new Date().toString(),
+	}
+
+	db.transaction(["notes"],"readwrite").objectStore("notes").count().onsuccess = function(event) {
+		var total = event.target.result;
+		console.log(total);
+		note.uid = "notes/" + (total+1);
+		
+		var request = db.transaction(["notes"],"readwrite").objectStore("notes").add(note);
+		
+		request.onerror = function(e) {
+			console.log("Error",e.target.error.name);
+			//some type of error handler
+		}
+
+		request.onsuccess = function(e) {
+			console.log("Woot! Did it");
+		}
+
+	}
+	
+}
+</script>
+
+<button id="addButton">Add Data</button>
+
+<pre id="resultWrap"></pre>
+</body>
+</html>
